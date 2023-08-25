@@ -1,4 +1,5 @@
 
+import { start } from 'repl';
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -6,48 +7,83 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let hover = vscode.languages.registerHoverProvider("python", {
         provideHover(document, position, token) {
-			let dataframes = findAllDataframes(document)
-			if (dataframes.length == 0) {return}
+			let dataframes = findAllDataframes(document);
+			if (dataframes.length === 0) {return;}
 
 			for (let dataframe of dataframes) {
 				if ((position.line < dataframe[1]) ||
 				 (position.line > dataframe[2])) {
-					continue
+					continue;
 				}
 				const range = document.getWordRangeAtPosition(position);
 				const word = document.getText(range);
-				return new vscode.Hover(word)
+				return new vscode.Hover(dataframe[4] + "  \n" + dataframe[3]);
 			}
 
 
 
 			}
-		})
-	context.subscriptions.push(hover)
+		});
+	context.subscriptions.push(hover);
 
 	//let dd = new DataFrameDisplayer()
 }
-
 export function deactivate() {}
 
 function findAllDataframes(document: vscode.TextDocument) {
-	const text = document.getText()
-	let regex = RegExp("createDataFrame","g")
-	let dataframe_definition
-	let dataframeArray: Regexp= []
+	let text = document.getText();
+	let regex = RegExp("createDataFrame\\(","gm");
+	let dataframeDefinition;
+	let dataframeArray = [];
 
 
-	while ((dataframe_definition = regex.exec(text)) !== null) {
-		let first_line_number=text.slice(0,dataframe_definition.index).split("\n").length  -1
-		let last_line_number=text.slice(0,dataframe_definition.lastIndex).split("\n").length - 1
+	while ((dataframeDefinition = regex.exec(text)) !== null) {
+		let firstLineNumber=text.slice(0,dataframeDefinition.index).split("\n").length  -1;
+		let [contents, schema_definition] = parseDataFrame(text, dataframeDefinition.index);
 
-		console.log(`found ${dataframe_definition[0]} at line ${first_line_number}`)
-		dataframeArray.push([dataframe_definition, first_line_number, last_line_number])
+		let lastLineNumber=text.slice(0,dataframeDefinition.lastIndex).split("\n").length - 1;
+
+		console.log(`found ${dataframeDefinition[0]} at line ${firstLineNumber}`);
+		dataframeArray.push([dataframeDefinition, firstLineNumber, lastLineNumber, contents, schema_definition]);
 	}
-	return dataframeArray
+	return dataframeArray;
+}
+
+function parseDataFrame(text:string, index) {
+	let contents = get_contents(text, index);
+	let schema_definition = get_schema_definition(text, index);
+
+	return [contents, schema_definition];
+
+
+function get_contents(text, index) {
+	let text_local = text.slice(index).replace(/[\n\r]/g,"").replace(/\s+/g,"");
+	let start_of_contents = "[";
+	let end_of_contents = "]";
+	let startOfContentsIdx = text_local.indexOf(start_of_contents) + end_of_contents.length;
+	let contents = text_local.slice(startOfContentsIdx);
+	contents = contents.slice(0, contents.indexOf(end_of_contents));
+	return contents;
+}
+
+function get_schema_definition(text, index) {
+	let text_local = text.slice(index).replace(/[\n\r]/g,"").replace(/\s+/g,"");
+							 
+	let start_of_schema = "schema=StructType([";
+	let end_of_schema = "]";
+	let startOfSchemaIdx = text_local.indexOf(start_of_schema) + start_of_schema.length;
+	let schema_definition = text_local.slice(startOfSchemaIdx);
+	schema_definition = schema_definition.slice(0, schema_definition.indexOf(end_of_schema));
+	schema_definition = schema_definition.replace(/StructField\("/g,"").replace(/",.+?\(\),(True|False)\)/g," ");
+	return schema_definition;
+
 }
 
 
+
+
+
+}
 
 // const decorationType = vscode.window.createTextEditorDecorationType({  backgroundColor: 'green',
 // border: '2px solid white',});
