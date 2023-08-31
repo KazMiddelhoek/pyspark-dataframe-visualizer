@@ -11,67 +11,115 @@ export function activate(context: vscode.ExtensionContext) {
 			if (dataframes.length === 0) {return;}
 
 			for (let dataframe of dataframes) {
-				if ((position.line < dataframe[1]) ||
-				 (position.line > dataframe[2])) {
+				if ((position.line < dataframe[0]) ||
+				 (position.line > dataframe[1])) {
 					continue;
 				}
-				return new vscode.Hover(dataframe[4] + "  \n" + dataframe[3]);
+				return new vscode.Hover(formatMarkdownTable(dataframe[3], dataframe[2]));
 			}
-
-
-
 			}
 		});
 	context.subscriptions.push(hover);
 }
 export function deactivate() {}
 
+function formatMarkdownTable(header: string, contents: string) {
+	let markdownTable: string = "|";
+	markdownTable = formatHeader(markdownTable, header);
+
+	markdownTable = formatContents(markdownTable, contents, header);
+
+	return markdownTable;
+}
+
+function formatHeader(markdownTable: string, header: string) {
+	for (let column of header.split(" ")) {
+		markdownTable += column + "|";
+	}
+	markdownTable += "  \n|";
+	for (let _ of header.split(" ")) {
+		markdownTable += "---" + "|";
+	}
+	return markdownTable;
+}
+
+function formatContents(markdownTable: string, contents: string, header: string) {
+	let headerArr = header.split(" ");
+	if (contents.includes("{")) {
+		// dictionary parsing
+		for (let row of contents.split("},{")) {
+			markdownTable += "  \n|"
+			for (let headerColumn of headerArr) {
+				let start=row.indexOf(headerColumn);
+				if (start === -1) {
+					markdownTable +=  "null |";
+					continue;
+				}
+				let temp = row.slice(start);
+				temp = temp.slice(temp.indexOf(":"), temp.indexOf(","));
+				markdownTable += temp + "|"
+			}
+		}
+		return markdownTable;
+	}
+
+	// tuple parsing
+	for (let row of contents.split("),(")) {
+		markdownTable += "  \n|"
+		for (let column of row.split(",")) {
+			markdownTable += column + "|";
+		}
+	}
+	return markdownTable;
+}
+
 function findAllDataframes(document: vscode.TextDocument) {
 	let text = document.getText();
 	let regex = RegExp("createDataFrame\\(","gm");
-	let dataframeDefinition;
-	let dataframeArray = [];
+	let dataframeDefinition: RegExpExecArray | null;
+	let dataframeArray: [number,number, string, string][] = [];
 
 
 	while ((dataframeDefinition = regex.exec(text)) !== null) {
 		let firstLineNumber=text.slice(0,dataframeDefinition.index).split("\n").length  -1;
-		let [contents, schema_definition] = parseDataFrame(text, dataframeDefinition.index);
+		let [contents, schemaDefinition] = parseDataFrame(text, dataframeDefinition.index);
 
 		let lastLineNumber=text.slice(0,dataframeDefinition.lastIndex).split("\n").length - 1;
 
 		console.log(`found ${dataframeDefinition[0]} at line ${firstLineNumber}`);
-		dataframeArray.push([dataframeDefinition, firstLineNumber, lastLineNumber, contents, schema_definition]);
+		dataframeArray.push([firstLineNumber, lastLineNumber, contents, schemaDefinition]);
 	}
 	return dataframeArray;
 }
 
-function parseDataFrame(text:string, index) {
-	let contents = get_contents(text, index);
-	let schema_definition = get_schema_definition(text, index);
+function parseDataFrame(text: string, index: number) {
+	let contents = getContents(text, index);
+	let schemaDefinition = getSchemaDefinition(text, index);
 
-	return [contents, schema_definition];
+	return [contents, schemaDefinition];
 
 
-function get_contents(text, index) {
-	let text_local = text.slice(index).replace(/[\n\r]/g,"").replace(/\s+/g,"");
-	let start_of_contents = "[";
-	let end_of_contents = "]";
-	let startOfContentsIdx = text_local.indexOf(start_of_contents) + end_of_contents.length;
-	let contents = text_local.slice(startOfContentsIdx);
-	contents = contents.slice(0, contents.indexOf(end_of_contents));
+function getContents(text: string, index: number) {
+	let textLocal = text.slice(index).replace(/[\n\r]/g,"").replace(/\s+/g,"");
+	let startOfContents = "[";
+	let endOfContents = "]";
+	let startOfContentsIdx = textLocal.indexOf(startOfContents) + endOfContents.length;
+	let contents = textLocal.slice(startOfContentsIdx);
+	contents = contents.slice(0, contents.indexOf(endOfContents));
 	return contents;
 }
 
-function get_schema_definition(text, index) {
-	let text_local = text.slice(index).replace(/[\n\r]/g,"").replace(/\s+/g,"");
+function getSchemaDefinition(text: string, index: number) {
+	let textLocal = text.slice(index).replace(/[\n\r]/g,"").replace(/\s+/g,"");
 							 
-	let start_of_schema = "schema=StructType([";
-	let end_of_schema = "]";
-	let startOfSchemaIdx = text_local.indexOf(start_of_schema) + start_of_schema.length;
-	let schema_definition = text_local.slice(startOfSchemaIdx);
-	schema_definition = schema_definition.slice(0, schema_definition.indexOf(end_of_schema));
-	schema_definition = schema_definition.replace(/StructField\("/g,"").replace(/",.+?\(\),(True|False)\)/g," ");
-	return schema_definition;
+	let startOfSchema = "schema=StructType([";
+	let endOfSchema = "]";
+	let startOfSchemaIdx = textLocal.indexOf(startOfSchema) + startOfSchema.length;
+	let schemaDefinition = textLocal.slice(startOfSchemaIdx);
+	schemaDefinition = schemaDefinition.slice(0, schemaDefinition.indexOf(endOfSchema));
+	schemaDefinition = schemaDefinition.replace(/StructField\("/g,"").replace(/",.+?\(\),(True|False)\)/g," ").replace(/,/g,"");
+
+	return schemaDefinition;
 
 }
 
