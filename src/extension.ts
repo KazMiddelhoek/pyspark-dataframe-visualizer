@@ -15,8 +15,6 @@ export function activate(context: vscode.ExtensionContext) {
 				 (position.line > dataframe[2])) {
 					continue;
 				}
-				const range = document.getWordRangeAtPosition(position);
-				const word = document.getText(range);
 				return new vscode.Hover(dataframe[4] + "  \n" + dataframe[3]);
 			}
 
@@ -25,8 +23,6 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		});
 	context.subscriptions.push(hover);
-
-	//let dd = new DataFrameDisplayer()
 }
 export function deactivate() {}
 
