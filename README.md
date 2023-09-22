@@ -1,4 +1,4 @@
-# pyspark-dataframe-visualizer README
+# pyspark-dataframe-visualizer
 
 This VS Code extension displays a pyspark dataframe, formatted as a table when you hover over it!
 
@@ -11,11 +11,11 @@ hovering over your dataframe definition displays the dataframe as a nicely forma
 
 You can define your dataframes using a list of tuples:
 
-\!\[Hovering over tuple dict\]\(images/hover_over_tuple_dataframe.png\)
+![Hovering over tuple dict](images/hover_over_tuple_dataframe.png)
 
 Or using a list of dictionaries:
 
-\!\[Hovering over tuple dict\]\(images/hover_over_dict_dataframe.png\)
+![Hovering over tuple dict](images/hover_over_dict_dataframe.png)
 
 
 ## Known issues
