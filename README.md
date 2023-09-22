@@ -2,6 +2,11 @@
 
 This VS Code extension displays a pyspark dataframe, formatted as a table when you hover over it!
 
+## How to install
+
+* Clone this repository.
+* Open the repository in vscode
+* In the terminal, run ```code --install-extension releases/pyspark-dataframe-visualizer-0.0.1.vsix```
 
 ## Features
 
