@@ -3,6 +3,10 @@
   "displayName": "pyspark-dataframe-visualizer",
   "description": "Visualize PySpark dataframes on hover",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KazMiddelhoek/pyspark-dataframe-visualizer.git"
+  },
   "engines": {
     "vscode": "^1.81.0"
   },
