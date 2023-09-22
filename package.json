@@ -1,7 +1,7 @@
 {
   "name": "pyspark-dataframe-visualizer",
   "displayName": "pyspark-dataframe-visualizer",
-  "description": "Visualize dataframes",
+  "description": "Visualize PySpark dataframes on hover",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.81.0"
